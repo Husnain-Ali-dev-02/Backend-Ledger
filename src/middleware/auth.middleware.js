@@ -10,9 +10,14 @@ async function authMiddleware(req, res, next) {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await userModel.findById(decoded.userId);
-req.user = user;
-return next();
+       const user = await userModel.findById(decoded.userId).select("-password");
+        
+        if (!user) {
+            return res.status(401).json({ message: "Unauthorized: User not found." });
+        }
+        
+        req.user = user;
+     return next();
     } catch (err) {
         return res.status(401).json({ message: "Unauthorized: Invalid token."})
     }

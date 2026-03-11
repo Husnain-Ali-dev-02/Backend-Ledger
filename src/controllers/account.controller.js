@@ -1,54 +1,63 @@
 const accountModel = require("../models/account.model");
-
+const mongoose = require("mongoose");
 
 async function createAccountController(req, res) {
-
-    const user = req.user;
-
+  try {
+    const { currency } = req.body;
     const account = await accountModel.create({
-        user: user._id
-    })
-
-    res.status(201).json({
-        account
-    })
-
+      user: req.user._id,
+      ...(currency && { currency }),
+    });
+    res.status(201).json({ account });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to create account", error: err.message });
+  }
 }
 
 async function getUserAccountsController(req, res) {
-
+  try {
     const accounts = await accountModel.find({ user: req.user._id });
-
-    res.status(200).json({
-        accounts
-    })
+    res.status(200).json({ accounts });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to fetch accounts", error: err.message });
+  }
 }
 
 async function getAccountBalanceController(req, res) {
-    const { accountId } = req.params;
+ try {
+        const { accountId } = req.params;
 
-    const account = await accountModel.findOne({
-        _id: accountId,
-        user: req.user._id
-    })
+        if (!mongoose.Types.ObjectId.isValid(accountId)) {
+            return res.status(400).json({ message: "Invalid account ID" });
+        }
 
-    if (!account) {
-        return res.status(404).json({
-            message: "Account not found"
-        })
-    }
+        const account = await accountModel.findOne({
+           _id: accountId,
+            user: req.user._id
+        });
 
-    const balance = await account.getBalance();
+        if (!account) {
+            return res.status(404).json({ message: "Account not found" });
+        }
 
-    res.status(200).json({
-        accountId: account._id,
-        balance: balance
-    })
+       // TODO: Uncomment getBalance in account.model.js or implement balance logic here
+        const balance = await account.getBalance();
+
+        res.status(200).json({
+            accountId: account._id,
+            balance
+        });
+    } catch (err) {
+        res.status(500).json({ message: "Failed to get balance", error: err.message });
 }
-
+}
 
 module.exports = {
-    createAccountController,
-    getUserAccountsController,
-    getAccountBalanceController
-}
+  createAccountController,
+  getUserAccountsController,
+  getAccountBalanceController,
+};

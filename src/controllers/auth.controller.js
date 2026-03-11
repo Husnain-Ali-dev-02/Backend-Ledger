@@ -21,10 +21,20 @@ async function userRegisterController(req, res) {
         })
     }
 
-    const user = await userModel.create({
-        email, password, name
-    })
-
+     let user;
+    try {
+        user = await userModel.create({
+            email, password, name
+        });
+    } catch (error) {
+        if (error?.code === 11000) {
+            return res.status(409).json({
+                message: "User already exists with email.",
+                status: "failed"
+            });
+        }
+        throw error;
+    }
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
 
     res.cookie("token", token)
